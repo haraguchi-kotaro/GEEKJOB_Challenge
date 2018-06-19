@@ -1,6 +1,7 @@
 package jums;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -8,12 +9,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- * insertresultと対応するサーブレット
- * フォームから入力された値をセッション経由で受け取り、データベースにinsertする
- * 直接アクセスした場合はerror.jspに振り分け
+ *
  * @author hayashi-s
  */
-public class InsertResult extends HttpServlet {
+public class Update extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -26,40 +25,12 @@ public class InsertResult extends HttpServlet {
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
-        //セッションスタート
+        response.setContentType("text/html;charset=UTF-8");
+        //アクセスチェック用
         HttpSession session = request.getSession();
+        session.setAttribute("ac", (int) (Math.random() * 1000));
         
-        try{
-            request.setCharacterEncoding("UTF-8");//リクエストパラメータの文字コードをUTF-8に変更
-            
-            //アクセスルートチェック
-            String accesschk = request.getParameter("ac");
-            if(accesschk ==null || (Integer)session.getAttribute("ac")!=Integer.parseInt(accesschk)){
-                throw new Exception("不正なアクセスです");
-            }
-            
-            UserDataBeans udb = (UserDataBeans)session.getAttribute("udb");
-            
-            //DTOオブジェクトにマッピング。DB専用のパラメータに変換
-            UserDataDTO userdata = new UserDataDTO();
-            udb.UD2DTOMapping(userdata);
-            
-            //DBへデータの挿入
-            UserDataDAO .getInstance().insert(userdata);
-            
-            //成功したのでセッションの値を削除
-            session.invalidate();
-            
-            //結果画面での表示用に入力パラメータ―をリクエストパラメータとして保持
-            request.setAttribute("udb", udb);
-            
-            request.getRequestDispatcher("/insertresult.jsp").forward(request, response);
-        }catch(Exception e){
-            //何らかの理由で失敗したらエラーページにエラー文を渡して表示。想定は不正なアクセスとDBエラー
-            request.setAttribute("error", e.getMessage());
-            request.getRequestDispatcher("/error.jsp").forward(request, response);
-        }
+        request.getRequestDispatcher("/update.jsp").forward(request, response);  
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">

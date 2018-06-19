@@ -1,6 +1,10 @@
 package jums;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -8,12 +12,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- * insertresultと対応するサーブレット
- * フォームから入力された値をセッション経由で受け取り、データベースにinsertする
- * 直接アクセスした場合はerror.jspに振り分け
+ *
  * @author hayashi-s
  */
-public class InsertResult extends HttpServlet {
+public class UpdateResult extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -26,11 +28,13 @@ public class InsertResult extends HttpServlet {
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+        PrintWriter out = response.getWriter();
         
         //セッションスタート
         HttpSession session = request.getSession();
         
-        try{
+        try {
             request.setCharacterEncoding("UTF-8");//リクエストパラメータの文字コードをUTF-8に変更
             
             //アクセスルートチェック
@@ -39,26 +43,38 @@ public class InsertResult extends HttpServlet {
                 throw new Exception("不正なアクセスです");
             }
             
-            UserDataBeans udb = (UserDataBeans)session.getAttribute("udb");
+            
+            //フォームからの入力を取得して、JavaBeansに格納
+            UserDataBeans udb = new UserDataBeans();
+            udb.setName(request.getParameter("name"));
+            udb.setYear(request.getParameter("year"));
+            udb.setMonth(request.getParameter("month"));
+            udb.setDay(request.getParameter("day"));
+            udb.setType(request.getParameter("type"));
+            udb.setTell(request.getParameter("tell"));
+            udb.setComment(request.getParameter("comment"));
             
             //DTOオブジェクトにマッピング。DB専用のパラメータに変換
-            UserDataDTO userdata = new UserDataDTO();
-            udb.UD2DTOMapping(userdata);
+            UserDataDTO updateUserData = new UserDataDTO();
+            udb.UD2DTOMapping(updateUserData);
+            //userIDだけはupdate.jspより引いてきてupdateuserdateへ格納する。
+            updateUserData.setUserID(Integer.parseInt(request.getParameter("id")));
             
-            //DBへデータの挿入
-            UserDataDAO .getInstance().insert(userdata);
+            //DBへアップデート実行
+            UserDataDAO .getInstance().update(updateUserData);
             
-            //成功したのでセッションの値を削除
-            session.invalidate();
             
             //結果画面での表示用に入力パラメータ―をリクエストパラメータとして保持
             request.setAttribute("udb", udb);
             
-            request.getRequestDispatcher("/insertresult.jsp").forward(request, response);
+            request.getRequestDispatcher("/updateresult.jsp").forward(request, response);
+            
         }catch(Exception e){
             //何らかの理由で失敗したらエラーページにエラー文を渡して表示。想定は不正なアクセスとDBエラー
             request.setAttribute("error", e.getMessage());
             request.getRequestDispatcher("/error.jsp").forward(request, response);
+        } finally {
+            
         }
     }
 

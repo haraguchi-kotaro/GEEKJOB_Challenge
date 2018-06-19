@@ -1,6 +1,9 @@
 package jums;
 
 import java.io.IOException;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -8,12 +11,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- * insertresultと対応するサーブレット
- * フォームから入力された値をセッション経由で受け取り、データベースにinsertする
- * 直接アクセスした場合はerror.jspに振り分け
+ *
  * @author hayashi-s
  */
-public class InsertResult extends HttpServlet {
+public class SearchResult extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -39,27 +40,48 @@ public class InsertResult extends HttpServlet {
                 throw new Exception("不正なアクセスです");
             }
             
-            UserDataBeans udb = (UserDataBeans)session.getAttribute("udb");
+            //フォームからの入力を取得して、JavaBeansに格納。詳細画面からの戻り&空入力だったらセッションを確認し、あればそれを検索元のデータとして扱う。
+            UserDataBeans udb = new UserDataBeans();
+            if(request.getParameter("searchName") != null || request.getParameter("year") != null || request.getParameter("type") !=null){
+                //検索フォームを埋めてこのページに来た時(初回)
+                udb.setName(request.getParameter("searchName"));
+                udb.setYear(request.getParameter("year"));
+                udb.setType(request.getParameter("type"));
+                
+                //DTOオブジェクトにマッピング。DB専用のパラメータに変換
+                UserDataDTO searchData = new UserDataDTO();
+                udb.UD2DTOMapping(searchData);
+                
+                ArrayList <UserDataDTO> resultData = UserDataDAO .getInstance().search(searchData);
+                request.setAttribute("resultData", resultData);
+
+                request.getRequestDispatcher("/searchresult.jsp").forward(request, response);  
+            }else if(session.getAttribute("udb")!=null){
+                //詳細ページからの戻りの時
+                udb = (UserDataBeans) session.getAttribute("udb");
+                
+            }
+            
+            //ユーザー情報群をセッションに格納
+            session.setAttribute("udb", udb);
+            System.out.println("Session updated!!");
             
             //DTOオブジェクトにマッピング。DB専用のパラメータに変換
-            UserDataDTO userdata = new UserDataDTO();
-            udb.UD2DTOMapping(userdata);
-            
-            //DBへデータの挿入
-            UserDataDAO .getInstance().insert(userdata);
-            
-            //成功したのでセッションの値を削除
-            session.invalidate();
-            
-            //結果画面での表示用に入力パラメータ―をリクエストパラメータとして保持
-            request.setAttribute("udb", udb);
-            
-            request.getRequestDispatcher("/insertresult.jsp").forward(request, response);
+            UserDataDTO searchData = new UserDataDTO();
+            udb.UD2DTOMapping(searchData);
+
+            ArrayList <UserDataDTO> resultData = UserDataDAO .getInstance().search(searchData);
+            request.setAttribute("resultData", resultData);
+
+            request.getRequestDispatcher("/searchresult.jsp").forward(request, response);  
+        
         }catch(Exception e){
             //何らかの理由で失敗したらエラーページにエラー文を渡して表示。想定は不正なアクセスとDBエラー
             request.setAttribute("error", e.getMessage());
             request.getRequestDispatcher("/error.jsp").forward(request, response);
         }
+        
+        
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">

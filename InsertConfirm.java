@@ -6,7 +6,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import jums.UserDataBeans.*;
 
 /**
  * insertconfirm.jspと対応するサーブレット
@@ -27,39 +26,32 @@ public class InsertConfirm extends HttpServlet {
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        
+        //セッションスタート
+        HttpSession session = request.getSession();
+        
         try{
-            HttpSession session = request.getSession();
-            request.setCharacterEncoding("UTF-8");//セッションに格納する文字コードをUTF-8に変更
+            request.setCharacterEncoding("UTF-8");//リクエストパラメータの文字コードをUTF-8に変更
+            
+            //アクセスルートチェック
             String accesschk = request.getParameter("ac");
-                if(accesschk ==null || (Integer)session.getAttribute("ac")!=Integer.parseInt(accesschk)){
-                    throw new Exception("不正なアクセスです");
-                }
+            if(accesschk ==null || (Integer)session.getAttribute("ac")!=Integer.parseInt(accesschk)){
+                throw new Exception("不正なアクセスです");
+            }
             
-            //フォームからの入力を取得
-            String name = request.getParameter("name");
-            String year = request.getParameter("year");
-            String month = request.getParameter("month");
-            String day = request.getParameter("day");
-            String type = request.getParameter("type");
-            String tell = request.getParameter("tell");
-            String comment = request.getParameter("comment");
-            
-            //UserDataBeansのインスタンス作成。そこにフォームに入力された値を代入
-            UserDataBeans beans = new UserDataBeans();
-            
-            beans.setName(name);
-            beans.setYear(year);
-            beans.setMonth(month);
-            beans.setDay(day);
-            beans.setType(type);
-            beans.setTell(tell);
-            beans.setComment(comment);
-            
-            //"User"という名前でbeansを保存
-            session.setAttribute("User",beans);
-            
-            
-            
+            //フォームからの入力を取得して、JavaBeansに格納
+            UserDataBeans udb = new UserDataBeans();
+            udb.setName(request.getParameter("name"));
+            udb.setYear(request.getParameter("year"));
+            udb.setMonth(request.getParameter("month"));
+            udb.setDay(request.getParameter("day"));
+            udb.setType(request.getParameter("type"));
+            udb.setTell(request.getParameter("tell"));
+            udb.setComment(request.getParameter("comment"));
+
+            //ユーザー情報群をセッションに格納
+            session.setAttribute("udb", udb);
+            System.out.println("Session updated!!");
             
             request.getRequestDispatcher("/insertconfirm.jsp").forward(request, response);
         }catch(Exception e){

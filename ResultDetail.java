@@ -1,6 +1,7 @@
 package jums;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -8,12 +9,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- * insertresultと対応するサーブレット
- * フォームから入力された値をセッション経由で受け取り、データベースにinsertする
- * 直接アクセスした場合はerror.jspに振り分け
+ *
  * @author hayashi-s
  */
-public class InsertResult extends HttpServlet {
+public class ResultDetail extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -27,39 +26,37 @@ public class InsertResult extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        //セッションスタート
+        //セッション取得
         HttpSession session = request.getSession();
-        
         try{
             request.setCharacterEncoding("UTF-8");//リクエストパラメータの文字コードをUTF-8に変更
+
+            //DTOオブジェクトにマッピング。DB専用のパラメータに変換
+            UserDataDTO searchData = new UserDataDTO();
             
-            //アクセスルートチェック
-            String accesschk = request.getParameter("ac");
-            if(accesschk ==null || (Integer)session.getAttribute("ac")!=Integer.parseInt(accesschk)){
-                throw new Exception("不正なアクセスです");
+            //検索結果画面から来た時
+            if(request.getQueryString()!=null){
+            //クエリストリングに入っているid情報を取得する。replaceallでクエリ中の数値だけを取得
+                String strQuery = request.getQueryString();
+                String repQuery = strQuery.replaceAll("[^0-9]","");
+                int intQuery = Integer.parseInt(repQuery);
+                searchData.setUserID(intQuery);
+
+            
+            //delete.jsp等から戻ってきた時
+            }else if(request.getParameter("id")!= null){
+                searchData.setUserID(Integer.parseInt(request.getParameter("id")));
             }
             
-            UserDataBeans udb = (UserDataBeans)session.getAttribute("udb");
+            UserDataDTO resultData = UserDataDAO .getInstance().searchByID(searchData);
+            session.setAttribute("resultData", resultData);
             
-            //DTOオブジェクトにマッピング。DB専用のパラメータに変換
-            UserDataDTO userdata = new UserDataDTO();
-            udb.UD2DTOMapping(userdata);
-            
-            //DBへデータの挿入
-            UserDataDAO .getInstance().insert(userdata);
-            
-            //成功したのでセッションの値を削除
-            session.invalidate();
-            
-            //結果画面での表示用に入力パラメータ―をリクエストパラメータとして保持
-            request.setAttribute("udb", udb);
-            
-            request.getRequestDispatcher("/insertresult.jsp").forward(request, response);
+            request.getRequestDispatcher("/resultdetail.jsp").forward(request, response);  
         }catch(Exception e){
             //何らかの理由で失敗したらエラーページにエラー文を渡して表示。想定は不正なアクセスとDBエラー
             request.setAttribute("error", e.getMessage());
             request.getRequestDispatcher("/error.jsp").forward(request, response);
-        }
+        }        
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">

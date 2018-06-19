@@ -1,6 +1,10 @@
 package jums;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -8,12 +12,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- * insertresultと対応するサーブレット
- * フォームから入力された値をセッション経由で受け取り、データベースにinsertする
- * 直接アクセスした場合はerror.jspに振り分け
+ *
  * @author hayashi-s
  */
-public class InsertResult extends HttpServlet {
+public class DeleteResult extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -26,12 +28,10 @@ public class InsertResult extends HttpServlet {
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
-        //セッションスタート
-        HttpSession session = request.getSession();
-        
-        try{
-            request.setCharacterEncoding("UTF-8");//リクエストパラメータの文字コードをUTF-8に変更
+        response.setContentType("text/html;charset=UTF-8");
+        try {
+            //セッションスタート
+            HttpSession session = request.getSession();
             
             //アクセスルートチェック
             String accesschk = request.getParameter("ac");
@@ -39,26 +39,20 @@ public class InsertResult extends HttpServlet {
                 throw new Exception("不正なアクセスです");
             }
             
-            UserDataBeans udb = (UserDataBeans)session.getAttribute("udb");
             
-            //DTOオブジェクトにマッピング。DB専用のパラメータに変換
-            UserDataDTO userdata = new UserDataDTO();
-            udb.UD2DTOMapping(userdata);
+            UserDataDTO deleteud = (UserDataDTO)session.getAttribute("resultData");
             
-            //DBへデータの挿入
-            UserDataDAO .getInstance().insert(userdata);
+            //削除実行
+            UserDataDAO .getInstance().delete(deleteud);
             
-            //成功したのでセッションの値を削除
-            session.invalidate();
+            request.getRequestDispatcher("/deleteresult.jsp").forward(request, response);
             
-            //結果画面での表示用に入力パラメータ―をリクエストパラメータとして保持
-            request.setAttribute("udb", udb);
-            
-            request.getRequestDispatcher("/insertresult.jsp").forward(request, response);
-        }catch(Exception e){
+        } catch (Exception e) {
             //何らかの理由で失敗したらエラーページにエラー文を渡して表示。想定は不正なアクセスとDBエラー
             request.setAttribute("error", e.getMessage());
             request.getRequestDispatcher("/error.jsp").forward(request, response);
+        } finally {
+            
         }
     }
 

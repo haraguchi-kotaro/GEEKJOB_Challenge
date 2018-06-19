@@ -1,118 +1,156 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package jums;
 
 import java.io.Serializable;
-/**タスク3. フォームから受け取ったデータ自体を格納できるJavaBeans(UserDataBeans.java)を作成
- *insert.jspで入力された値を持ちまわるためのJavaBeansである。
- * @author ko-taro
+import java.util.ArrayList;
+import java.util.Calendar;
+
+/**
+ * ページで入出力されるユーザー情報を持ちまわるJavaBeans。DTOと違い画面表示系への結びつきが強い
+ * DTOへの変換メソッド、入力チェックリストを出力するメソッドも準備されている←ちょっと仕事しすぎかも
+ * @author hayashi-s
  */
 public class UserDataBeans implements Serializable{
     private String name;
-    private String year;
-    private String month;
-    private String day;
-    private String type;
+    private int year;
+    private int month;
+    private int day;
     private String tell;
+    private int type ;
     private String comment;
     
-    public String getName(){
+    public UserDataBeans(){
+        this.name = "";
+        this.year = 0;
+        this.month = 0;
+        this.day = 0;
+        this.tell = "";
+        this.type = 0;
+        this.comment= "";
+    }
+    
+    public String getName() {
         return name;
     }
-    
-    public void setName(String name){
-        this.name = name;
+    public void setName(String name) {
+        //空文字(未入力)の場合空文字をセット
+        if(name.trim().length()==0){
+            this.name = "";
+        }else{
+            this.name = name;
+        }
     }
-    
-    public String getYear(){
+
+    public int getYear() {
         return year;
     }
-    
-    public void setYear(String year){
-        this.year = year;
+    public void setYear(String year) {
+        //初期選択状態の場合0をセット
+        if(year.equals("")){
+            this.year = 0;
+        }else{
+            this.year = Integer.parseInt(year);
+        }
     }
-    
-    public String getMonth(){
+
+    public int getMonth() {
         return month;
     }
-    
-    public void setMonth(String month){
-        this.month = month;
+    public void setMonth(String month) {
+        if(month.equals("")){
+            this.month = 0;
+        }else{
+            this.month = Integer.parseInt(month);
+        }
     }
-    
-    public String getDay(){
+
+    public int getDay() {
         return day;
     }
-    
-    public void setDay(String day){
-        this.day = day;
+    public void setDay(String day) {
+        if(day.equals("")){
+            this.day = 0;
+        }else{
+            this.day = Integer.parseInt(day);
+        }
     }
-    
-    public String getType(){
-        return type;
-    }
-    
-    public void setType(String type){
-        this.type = type;
-    }
-    
-    public String getTell(){
+
+    public String getTell() {
         return tell;
     }
-    
-    public void setTell(String tell){
-        this.tell = tell;
+    public void setTell(String tell) {
+        if(tell.trim().length()==0){
+            this.tell = "";
+        }else{
+            this.tell = tell;
+        }
     }
-    
-    public String getComment(){
+
+    public int getType() {
+        return type;
+    }
+    public void setType(String type) {
+        if(type == null){
+            this.type = 0;
+        }else{
+            this.type = Integer.parseInt(type);
+        }
+
+    }
+
+    public String getComment() {
         return comment;
     }
-    
-    public void setComment(String comment){
-        this.comment = comment;
-    }
-    
-    public String nameCheck(String name){
-        if(!name.equals("")){
-            return "nameOK";
+    public void setComment(String comment) {
+        if(comment.trim().length()==0){
+            this.comment = "";
         }else{
-            return "noname";
+            this.comment = comment;
         }
     }
     
-    public String BirthdayCheck(String year, String month, String day){
-        if(year.equals("") || month.equals("") || day.equals("")){
-            return "nobirthday";
-        }else{
-            return "birthdayOK";
+    public ArrayList<String> chkproperties(){
+        ArrayList<String> chkList = new ArrayList<String>();
+        if(this.name.equals("")){
+            chkList.add("name");
         }
+        if(this.year == 0){
+            chkList.add("year");
+        }
+        if(this.month == 0){
+            chkList.add("month");
+        }
+        if(this.day == 0){
+            chkList.add("day");
+        }
+        if(this.tell.equals("")){
+            chkList.add("tell");
+        }
+        if(this.type == 0){
+            chkList.add("type");
+        }
+        if(this.comment.equals("")){
+            chkList.add("comment");
+        }
+        
+        return chkList;
     }
-    
-    public String TypeCheck(String type){
-        if(type != null){
-            return "typeOK";
+
+    public void UD2DTOMapping(UserDataDTO udd){
+        udd.setName(this.name);
+        if(this.year != 0 || this.month != 0 || this.day != 0){
+            Calendar birthday = Calendar.getInstance();
+            if(this.month == 0 || this.day == 0){
+                birthday.set(this.year,0,1);
+            }else{
+                birthday.set(this.year,(this.month)-1,this.day);
+            }
+            udd.setBirthday(birthday.getTime());
         }else{
-            return "notype";
+            udd.setBirthday(null);
         }
-    }
-    
-    public String TellCheck(String tell){
-        if(!tell.equals("")){
-            return "tellOK";
-        }else{
-            return "notell";
-        }
-    }
-    
-    public String CommentCheck(String comment){
-        if(!comment.equals("")){
-            return "commentOK";
-        }else{
-            return "nocomment";
-        }
+        udd.setTell(this.tell);
+        udd.setType(this.type);
+        udd.setComment(this.comment);
     }
     
 }
